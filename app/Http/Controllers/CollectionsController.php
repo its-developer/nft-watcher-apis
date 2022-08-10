@@ -142,6 +142,8 @@ class CollectionsController extends Controller
                 $totalRarity = 0;
                 $traitCountTraitCount = 0;
                 for ($i = 0; $i < count($current); $i++) {
+                    $tally = collect($tally);
+                    $current[$i]->trait_count = $tally[$current[$i]->trait_type][$current[$i]->value];
                     $rarityScore = $current[$i]->trait_count == 0 ? 0 : 1 / ($current[$i]->trait_count / count($assets));
                     $current[$i]->rarityScore = $rarityScore;
                     $totalRarity += $rarityScore;
@@ -215,6 +217,22 @@ class CollectionsController extends Controller
         ]);
     }
 
+    public function getTraitCount($trait_type)
+    {
+        $assets = $assets->map(function ($d) use ($trait) {
+            if ($d) {
+                $traitsColl = collect($d->traits);
+                $traitsColl = $traitsColl->where('trait_type', 'TraitCount')->values()->toArray();
+                if (count($traitsColl) > 0) {
+                    $trait_count = $traitsColl[0]['value'];
+                    if ($trait_count == $trait['trait_value']) {
+                        return $d;
+                    }
+                }
+            }
+        });
+    }
+
     public function assets(Request $request, $slug)
     {
         if (!Storage::disk('local')->exists($request->slug . ".json")) {
@@ -268,6 +286,8 @@ class CollectionsController extends Controller
             $totalRarity = 0;
             $traitCountTraitCount = 0;
             for ($i = 0; $i < count($current); $i++) {
+                $tally = collect($tally);
+                $current[$i]->trait_count = $tally[$current[$i]->trait_type][$current[$i]->value];
                 $rarityScore = $current[$i]->trait_count == 0 ? 0 : 1 / ($current[$i]->trait_count / count($assets));
                 $current[$i]->rarityScore = $rarityScore;
                 $totalRarity += $rarityScore;
@@ -297,7 +317,7 @@ class CollectionsController extends Controller
                     array_push($current, array(
                         'trait_type' => $type,
                         'value' => null,
-                        'trait_count' => count($assets) - $tally[$type]['occurences'],
+                        'trait_count' => (count($assets) - $tally[$type]['occurences']),
                         'rarityScore' => $rarityScoreNull,
                     ));
                     $totalRarity += $rarityScoreNull;
@@ -360,10 +380,12 @@ class CollectionsController extends Controller
                     $assets = $assets->map(function ($d) use ($trait) {
                         if ($d) {
                             $traitsColl = collect($d->traits);
-                            $traitsColl = $traitsColl->where("trait_count", '!=', null)->where("value", '!=', null)->values()->toArray();
-                            $trait_count = count($traitsColl) - 1;
-                            if ($trait_count == $trait['trait_value']) {
-                                return $d;
+                            $traitsColl = $traitsColl->where('trait_type', 'TraitCount')->values()->toArray();
+                            if (count($traitsColl) > 0) {
+                                $trait_count = $traitsColl[0]['value'];
+                                if ($trait_count == $trait['trait_value']) {
+                                    return $d;
+                                }
                             }
                         }
                     });
@@ -502,6 +524,8 @@ class CollectionsController extends Controller
             $totalRarity = 0;
             $traitCountTraitCount = 0;
             for ($i = 0; $i < count($current); $i++) {
+                $tally = collect($tally);
+                $current[$i]->trait_count = $tally[$current[$i]->trait_type][$current[$i]->value];
                 $rarityScore = $current[$i]->trait_count == 0 ? 0 : 1 / ($current[$i]->trait_count / count($assets));
                 $current[$i]->rarityScore = $rarityScore;
                 $totalRarity += $rarityScore;

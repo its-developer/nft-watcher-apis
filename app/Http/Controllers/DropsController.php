@@ -39,11 +39,9 @@ class DropsController extends Controller
         $dateRankedDrops = array();
         foreach ($drops as $drop) {
             if ($drop->launched_date) {
-                $launchedDate = date('Y-m-d', strtotime($drop->launched_date . ' + 1 days'));
-                if ($launchedDate > date('Y-m-d')) {
-                    if ($drop->launched_date >= date('Y-m-d')) {
-                        array_push($dateRankedDrops, $drop);
-                    }
+                $updatedLaunchedDate = date('Y-m-d', strtotime($drop->launched_date . ' + 2 days'));
+                if ($updatedLaunchedDate >= date('Y-m-d')) {
+                    array_push($dateRankedDrops, $drop);
                 }
             }
         }
@@ -54,7 +52,8 @@ class DropsController extends Controller
 
     public function rankedByVotes(Request $request)
     {
-        $drops = NftWatcherDrop::orderBy('launched_date', 'ASC');
+
+        $drops = NftWatcherDrop::orderBy('votes', 'desc');
         if ($request->has('search')) {
             if (strlen($request->get('search')) > 0) {
                 $drops->where('title', 'LIKE', '%' . $request->get('search') . '%');
@@ -64,14 +63,17 @@ class DropsController extends Controller
         $voteRandkedDrops = array();
         foreach ($drops as $drop) {
             if ($drop->launched_date) {
-                $launchedDate = date('Y-m-d', strtotime($drop->launched_date . ' + 1 days'));
-                if ($launchedDate > date('Y-m-d')) {
-                    if ($drop->votes >= 100) {
-                        array_push($voteRandkedDrops, $drop);
-                    }
+                if ($drop->votes >= 100) {
+                    array_push($voteRandkedDrops, $drop);
                 }
             }
         }
+        $voteRandkedDrops = collect($voteRandkedDrops);
+        $voteRandkedDrops = $voteRandkedDrops->map(function ($vote) {
+            $vote->votes = intval($vote->votes);
+            return $vote;
+        });
+        $voteRandkedDrops = $voteRandkedDrops->sortByDesc('votes')->values()->toArray();
         return response()->json($voteRandkedDrops);
     }
 
@@ -83,24 +85,28 @@ class DropsController extends Controller
                 $drops->where('title', 'LIKE', '%' . $request->get('search') . '%');
             }
         }
+
         $drops = $drops->get();
         $newlyDrops = array();
         foreach ($drops as $drop) {
             if ($drop->launched_date) {
-                $launchedDate = date('Y-m-d', strtotime($drop->launched_date . ' + 1 days'));
-                if ($launchedDate > date('Y-m-d')) {
-                    if ($drop->votes < 100) {
-                        array_push($newlyDrops, $drop);
-                    }
+                if ($drop->votes < 100) {
+                    array_push($newlyDrops, $drop);
                 }
             }
         }
+        $newlyDrops = collect($newlyDrops);
+        $newlyDrops = $newlyDrops->map(function ($vote) {
+            $vote->votes = intval($vote->votes);
+            return $vote;
+        });
+        $newlyDrops = $newlyDrops->sortBy('votes')->values()->toArray();
         return response()->json($newlyDrops);
     }
 
     public function completedDrops(Request $request)
     {
-        $drops = NftWatcherDrop::orderBy('launched_date', 'ASC');
+        $drops = NftWatcherDrop::orderBy('launched_date', 'DESC');
         if ($request->has('search')) {
             if (strlen($request->get('search')) > 0) {
                 $drops->where('title', 'LIKE', '%' . $request->get('search') . '%');
@@ -109,8 +115,8 @@ class DropsController extends Controller
         $drops = $drops->get();
         $completedDrops = array();
         foreach ($drops as $drop) {
-            $launchedDate = date('Y-m-d', strtotime($drop->launched_date . ' + 1 days'));
-            if ($launchedDate <= date('Y-m-d')) {
+            $launchedDate = date('Y-m-d', strtotime($drop->launched_date . ' + 2 days'));
+            if ($launchedDate < date('Y-m-d')) {
                 array_push($completedDrops, $drop);
             }
         }
@@ -135,6 +141,13 @@ class DropsController extends Controller
             'image' => 'required|image|mimes:jpeg,png,webp,jpg,gif,svg|max:2048',
             'title' => 'required|unique:nft_watcher_drops',
         ]);
+
+        if (str_contains($request->title, "-")) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Invalid Operation (' . $request->title . ') used in Drop\'s Title.',
+            ]);
+        }
 
         if ($validator->fails()) {
             if ($validator->getMessageBag()->getMessages()['image'] ?? null != null) {
@@ -174,7 +187,7 @@ class DropsController extends Controller
         NftWatcherDrop::create($newDrop);
         return response()->json([
             'success' => true,
-            'message' => "Thanks for your submission! Get 100 votes to be listed officially.",
+            'message' => "Thanks For Your Submission! Get 100 Votes To Be Officially Listed!",
         ]);
     }
 

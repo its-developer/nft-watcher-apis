@@ -49,7 +49,7 @@ Route::get('/collections', 'App\Http\Controllers\CollectionsController@getAllCol
 Route::get('/collection/{slug}', 'App\Http\Controllers\CollectionsController@getCollection');
 Route::get('/assets/{slug}', 'App\Http\Controllers\CollectionsController@assets');
 Route::get('/assets/{slug}/{id}', 'App\Http\Controllers\CollectionsController@getAsset');
-Route::post('/remove/assets/', 'App\Http\Controllers\CollectionsController@removeAssets');
+Route::post('/remove/assets', 'App\Http\Controllers\CollectionsController@removeAssets');
 Route::post('/store/assets', 'App\Http\Controllers\CollectionsController@storeAssets');
 
 Route::get('/project/statuses', 'App\Http\Controllers\ProjectPageController@index');
